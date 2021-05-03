@@ -7,7 +7,7 @@ import argparse
 import configparser
 from subprocess import Popen, PIPE, call
 
-def sort_index(bam, samtools):
+def sort_index(bam, samtools, temp=None):
     """
     Sort and index BAM file.
 
@@ -21,7 +21,10 @@ def sort_index(bam, samtools):
     sorted_bam = '{}.sorted.bam'.format(identifier)
 
     sam1 = Popen((samtools + ' view -bu ' + bam).split(' '), stdout=PIPE)
-    sam2 = Popen((samtools + ' sort -').split(' '), stdin=sam1.stdout, stdout=open(sorted_bam, 'w'))
+    # Create sort varible with temp folder if provided
+    sort = f"sort -T {temp}" if temp else "sort"
+
+    sam2 = Popen((samtools + f' {sort} -').split(' '), stdin=sam1.stdout, stdout=open(sorted_bam, 'w'))
     sam2.communicate()
     os.remove(bam)
     call("{} index {}".format(samtools, sorted_bam).split(' '))
@@ -114,7 +117,10 @@ def fastq2bam(args):
     #print(bwa)
     # # Sort BAM (BWA output piped into samtools for sorting before writing into bam)
     sam1 = Popen((args.samtools + ' view -bhS -').split(' '), stdin=bwa.stdout, stdout=PIPE)
-    sam2 = Popen((args.samtools + ' sort -').split(' '), stdin=sam1.stdout,
+
+    # Create sort varible with temp folder if provided
+    sort = f"sort -T {temp}" if temp else "sort"
+    sam2 = Popen((args.samtools + f' {sort} -').split(' '), stdin=sam1.stdout,
                   stdout=open('{}/{}.sort.bam'.format(bam_dir, filename), 'w'))
     
     sam2.communicate()
@@ -145,7 +151,7 @@ def consensus(args):
         args.bedfile = '{}/ConsensusCruncher/hg38_cytoBand.txt'.format(code_dir)
 
     # Create sample directory to hold consensus sequences
-    identifier = os.path.basename(args.bam).split('.bam', 1)[0]
+    identifier = os.path.basename(args.bam).split('.sorted.bam', 1)[0]
     sample_dir = '{}/{}'.format(args.c_output, identifier)
 
     # Check if dir exists and there's permission to write
@@ -178,8 +184,8 @@ def consensus(args):
     os.system(sscs_cmd)
 
     # Sort and index BAM files
-    sscs = sort_index(sscs, args.samtools)
-    sing = sort_index(sing, args.samtools)
+    sscs = sort_index(sscs, args.samtools, temp=args.temp)
+    sing = sort_index(sing, args.samtools, temp=args.temp)
 
     #######
     # DCS #
@@ -205,8 +211,8 @@ def consensus(args):
     os.system(dcs_cmd)
 
     # Sort and index BAM files
-    dcs = sort_index(dcs, args.samtools)
-    sscs_sing = sort_index(sscs_sing, args.samtools)
+    dcs = sort_index(dcs, args.samtools, temp=args.temp)
+    sscs_sing = sort_index(sscs_sing, args.samtools, temp=args.temp)
 
     #############################
     # Singleton Correction (SC) #
@@ -230,15 +236,15 @@ def consensus(args):
         # Sort and index BAM files
         sscs_cor = '{}/sscs_sc/{}.sscs.correction.bam'.format(sample_dir, identifier)
         os.rename('{}/sscs/{}.sscs.correction.bam'.format(sample_dir, identifier), sscs_cor)
-        sscs_cor = sort_index(sscs_cor, args.samtools)
+        sscs_cor = sort_index(sscs_cor, args.samtools, temp=args.temp)
 
         sing_cor = '{}/sscs_sc/{}.singleton.correction.bam'.format(sample_dir, identifier)
         os.rename('{}/sscs/{}.singleton.correction.bam'.format(sample_dir, identifier), sing_cor)
-        sing_cor = sort_index(sing_cor, args.samtools)
+        sing_cor = sort_index(sing_cor, args.samtools, temp=args.temp)
 
         uncorrected = '{}/sscs_sc/{}.uncorrected.bam'.format(sample_dir, identifier)
         os.rename('{}/sscs/{}.uncorrected.bam'.format(sample_dir, identifier), uncorrected)
-        uncorrected = sort_index(uncorrected, args.samtools)
+        uncorrected = sort_index(uncorrected, args.samtools, temp=args.temp)
 
         #############
         # SSCS + SC #
@@ -248,7 +254,7 @@ def consensus(args):
         merge_sc = "{} merge {} {} {} {}".format(args.samtools, sscs_sc, sscs, sscs_cor, sing_cor)
         print(merge_sc)
         call(merge_sc.split(' '))
-        sscs_sc = sort_index(sscs_sc, args.samtools)
+        sscs_sc = sort_index(sscs_sc, args.samtools, temp=args.temp)
 
         ############
         # DCS + SC #
@@ -270,9 +276,9 @@ def consensus(args):
         os.system(dcs_sc_cmd)
 
         # Sort and index BAM files
-        dcs_sc = sort_index(dcs_sc, args.samtools)
+        dcs_sc = sort_index(dcs_sc, args.samtools, temp=args.temp)
         sscs_sc_sing = '{}/dcs_sc/{}.sscs.sc.singleton.bam'.format(sample_dir, identifier)
-        sscs_sc_sing = sort_index(sscs_sc_sing, args.samtools)
+        sscs_sc_sing = sort_index(sscs_sc_sing, args.samtools, temp=args.temp)
 
         ########################
         # All Unique Molecules #
@@ -283,7 +289,7 @@ def consensus(args):
                                                          sscs_sc_sing, uncorrected).split(' ')
         print(all_unique)
         call(merge_all_unique)
-        all_unique = sort_index(all_unique, args.samtools)
+        all_unique = sort_index(all_unique, args.samtools, temp=args.temp)
 
         # Move stats and time tracker file to sample_dir
         os.rename('{}/dcs_sc/{}.stats.txt'.format(sample_dir, identifier),
@@ -427,6 +433,7 @@ if __name__ == '__main__':
     sub_a.add_argument('-s', '--samtools', metavar="SAMTOOLS", default =samtools_help,help=samtools_help, type=str)
     sub_a.add_argument('-p', '--bpattern', metavar="PATTERN",  type=str, help=bpattern_help)
     sub_a.add_argument('-l', '--blist', metavar="LIST",  type=str, help=blist_help)
+    sub_b.add_argument('-t', '--temp', type=str)
     sub_a.set_defaults(func=fastq2bam)
 
     # Set args for 'consensus' mode
@@ -440,6 +447,7 @@ if __name__ == '__main__':
                                                     "same base to form a consensus).")
     sub_b.add_argument('-d', '--bdelim', metavar="DELIMITER", default ='|', type=str, help=bdelim_help)
     sub_b.add_argument('--cleanup', choices=['True', 'False'], help=cleanup_help) # Make default
+    sub_b.add_argument('-t', '--temp', type=str)
     sub_b.set_defaults(func=consensus)
 
     # Parse args
