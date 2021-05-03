@@ -56,9 +56,9 @@ def fastq2bam(args):
 
     # Check if dir exists and there's permission to write
     if not os.path.exists(fastq_dir) and os.access(args.output, os.W_OK):
-        os.makedirs(fastq_dir)
+        os.makedirs(fastq_dir, , exist_ok=True)
     if not os.path.exists(bam_dir) and os.access(args.output, os.W_OK):
-        os.makedirs(bam_dir)
+        os.makedirs(bam_dir, , exist_ok=True)
 
     # Set file variables
     filename = os.path.basename(args.fastq1).split(args.name, 1)[0]
@@ -87,10 +87,10 @@ def fastq2bam(args):
        barcode_dist_dir = '{}/fastq_tag/barcode_dist'.format(args.output)
 
        if not os.path.exists(bad_barcode_dir) and os.access(args.output, os.W_OK):
-           os.makedirs(bad_barcode_dir)
+           os.makedirs(bad_barcode_dir, exist_ok=True)
 
        if not os.path.exists(barcode_dist_dir) and os.access(args.output, os.W_OK):
-           os.makedirs(barcode_dist_dir)
+           os.makedirs(barcode_dist_dir, exist_ok=True)
 
    #     Move files 
        os.rename('{}/{}_r1_bad_barcodes.txt'.format(fastq_dir, filename),
@@ -156,13 +156,13 @@ def consensus(args):
 
     # Check if dir exists and there's permission to write
     if not os.path.exists(sample_dir) and os.access(args.c_output, os.W_OK):
-        os.makedirs(sample_dir)
+        os.makedirs(sample_dir, exist_ok=True)
 
     ########
     # SSCS #
     ########
     # Set variables
-    os.makedirs(sample_dir + '/sscs')
+    os.makedirs(sample_dir + '/sscs', exist_ok=True)
     sscs = '{}/sscs/{}.sscs.bam'.format(sample_dir, identifier)
     sing = '{}/sscs/{}.singleton.bam'.format(sample_dir, identifier)
 
@@ -191,7 +191,7 @@ def consensus(args):
     # DCS #
     #######
     # Set variables
-    os.makedirs(sample_dir + '/dcs')
+    os.makedirs(sample_dir + '/dcs', exist_ok=True)
     dcs = '{}/dcs/{}.dcs.bam'.format(sample_dir, identifier)
     sscs_sing = '{}/dcs/{}.sscs.singleton.bam'.format(sample_dir, identifier)
 
@@ -218,7 +218,7 @@ def consensus(args):
     # Singleton Correction (SC) #
     #############################
     if args.scorrect != 'False':
-        os.makedirs(sample_dir + '/sscs_sc')
+        os.makedirs(sample_dir + '/sscs_sc', exist_ok=True)
         # Move stats and time tracker file to next dir
         os.rename('{}/dcs/{}.stats.txt'.format(sample_dir, identifier),
                   '{}/sscs/{}.stats.txt'.format(sample_dir, identifier))
@@ -259,7 +259,7 @@ def consensus(args):
         ############
         # DCS + SC #
         ############
-        os.makedirs(sample_dir + '/dcs_sc')
+        os.makedirs(sample_dir + '/dcs_sc', exist_ok=True)
         dcs_sc = '{}/dcs_sc/{}.dcs.sc.bam'.format(sample_dir, identifier)
         # Move stats and time tracker file to next dir
         os.rename('{}/sscs/{}.stats.txt'.format(sample_dir, identifier),
