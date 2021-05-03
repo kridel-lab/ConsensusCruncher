@@ -433,7 +433,7 @@ if __name__ == '__main__':
     sub_a.add_argument('-s', '--samtools', metavar="SAMTOOLS", default =samtools_help,help=samtools_help, type=str)
     sub_a.add_argument('-p', '--bpattern', metavar="PATTERN",  type=str, help=bpattern_help)
     sub_a.add_argument('-l', '--blist', metavar="LIST",  type=str, help=blist_help)
-    sub_b.add_argument('-tmp', '--temp', type=str)
+    sub_a.add_argument('-tmp', '--temp', type=str)
     sub_a.set_defaults(func=fastq2bam)
 
     # Set args for 'consensus' mode
