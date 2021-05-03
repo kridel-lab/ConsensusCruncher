@@ -56,9 +56,9 @@ def fastq2bam(args):
 
     # Check if dir exists and there's permission to write
     if not os.path.exists(fastq_dir) and os.access(args.output, os.W_OK):
-        os.makedirs(fastq_dir, , exist_ok=True)
+        os.makedirs(fastq_dir, exist_ok=True)
     if not os.path.exists(bam_dir) and os.access(args.output, os.W_OK):
-        os.makedirs(bam_dir, , exist_ok=True)
+        os.makedirs(bam_dir, exist_ok=True)
 
     # Set file variables
     filename = os.path.basename(args.fastq1).split(args.name, 1)[0]
