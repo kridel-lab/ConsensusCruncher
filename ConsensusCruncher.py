@@ -26,6 +26,7 @@ def sort_index(bam, samtools, temp=None):
 
     sam2 = Popen((samtools + f' {sort} -').split(' '), stdin=sam1.stdout, stdout=open(sorted_bam, 'w'))
     sam2.communicate()
+
     os.remove(bam)
     call("{} index {}".format(samtools, sorted_bam).split(' '))
 
@@ -119,10 +120,9 @@ def fastq2bam(args):
     sam1 = Popen((args.samtools + ' view -bhS -').split(' '), stdin=bwa.stdout, stdout=PIPE)
 
     # Create sort varible with temp folder if provided
-    sort = f"sort -T {temp}" if temp else "sort"
+    sort = f"sort -T {args.temp}" if args.temp else "sort"
     sam2 = Popen((args.samtools + f' {sort} -').split(' '), stdin=sam1.stdout,
                   stdout=open('{}/{}.sort.bam'.format(bam_dir, filename), 'w'))
-    
     sam2.communicate()
     
     os.system(picard + ' I=' + '{}/{}.sort.bam'.format(bam_dir, filename) +' O=' + '{}/{}.sorted.bam'.format(bam_dir, filename) + ' RGID=1 ' + ' RGPL=Illumina  RGLB=lib1 RGPU=unit1 ' + ' RGSM='+ filename )
